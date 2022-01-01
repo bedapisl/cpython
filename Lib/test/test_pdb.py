@@ -1593,6 +1593,28 @@ def bœr():
         self.assertRegex(res, "Restarting .* with arguments:\na b c")
         self.assertRegex(res, "Restarting .* with arguments:\nd e f")
 
+
+    def test_issue46215(self):
+
+        with open(os_helper.TESTFN, 'wb') as f:
+            f.write(textwrap.dedent("""
+                for i in range(1):
+                    import pdb
+                    pdb.set_trace()
+
+                x = y + z
+                """).encode('ascii'))
+        cmd = [sys.executable, '-u', os_helper.TESTFN]
+        proc = subprocess.Popen(cmd,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
+            )
+        self.addCleanup(proc.stdout.close)
+        stdout, stderr = proc.communicate(b'cont\n')
+        self.assertIn(b"x = y + z", stdout)
+
     def test_readrc_kwarg(self):
         script = textwrap.dedent("""
             import pdb; pdb.Pdb(readrc=False).set_trace()

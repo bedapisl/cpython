@@ -33,6 +33,7 @@ class Bdb:
         self.breaks = {}
         self.fncache = {}
         self.frame_returning = None
+        self.continue_called = False
 
         self._load_breaks()
 
@@ -113,6 +114,10 @@ class Bdb:
         if self.stop_here(frame) or self.break_here(frame):
             self.user_line(frame)
             if self.quitting: raise BdbQuit
+
+        if self.continue_called:
+            return None
+
         return self.trace_dispatch
 
     def dispatch_call(self, frame, arg):
@@ -349,6 +354,9 @@ class Bdb:
             while frame and frame is not self.botframe:
                 del frame.f_trace
                 frame = frame.f_back
+
+            del frame.f_trace
+            self.continue_called = True
 
     def set_quit(self):
         """Set quitting attribute to True.
